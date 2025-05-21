@@ -20,13 +20,19 @@ strat_dict = {
 }
 
 
+
+
+torch.set_float32_matmul_precision("high")
+
 @app.command()
 def main(
     # rootdir = "/home/E097600/data_wsl",
     rootdir: str = "./logs",
     # training
-    batch_size: int = 8,
+    batch_size: int = 32,
     epochs: int = 30,
+    workers:int = 0,
+
     # AL
     reps: int = 1,
     strat:str = "random",
@@ -34,7 +40,7 @@ def main(
     rootdir = Path(rootdir)
     datasetdir = rootdir / "datasets"
     logdir = rootdir / "outputs" / "voc"
-
+    np.random.seed(38)
     logdir.mkdir(exist_ok=True, parents=True)
     datasetdir.mkdir(exist_ok=True, parents=True)
 
@@ -81,10 +87,11 @@ def main(
         val_ds,
         batch_size=2*batch_size,
         shuffle=False,
-        num_workers=0,
+        num_workers=workers,
         collate_fn=collate_fn,
         drop_last=True,
     )
+
 
     def create_model():
         return odModule(pretrained=False)
@@ -103,9 +110,12 @@ def main(
     # Start of Selection
     full_indices = torch.arange(len(ds))
 
+    with open(f"metrics_{strat}.txt", "w") as f:
+        pass
     for rep in range(reps):
-        items_to_add = [2858, 572, 1143, 1143]  # 50% 60% 80% 100%
+        items_to_add = [2858, 572, 1143, 1144]  # 50% 60% 80% 100%
         model = create_model()
+
         for cycle, number_items in enumerate(items_to_add):
             if cycle == 0:
                 # Random selection for the first cycle
@@ -114,9 +124,9 @@ def main(
                 )
                 remaining_indices = np.setdiff1d(full_indices, train_indices)
             else:
-                selected_indices = strat_dict[strat](model, base_ds=ds, unlabeled_indices=remaining_indices, budget=number_items )
-
-
+                selected_indices = strat_dict[strat](model, base_ds=ds, unlabeled_indices=remaining_indices, budget=number_items)
+                train_indices = np.concatenate((train_indices, selected_indices))
+                remaining_indices = np.setdiff1d(full_indices, train_indices)
 
             # Training
             model = create_model()
@@ -125,7 +135,7 @@ def main(
                 ds,
                 batch_size=batch_size,
                 sampler=RandomSampler(train_indices),
-                num_workers=os.cpu_count() // 2,
+                num_workers=workers,
                 collate_fn=collate_fn,
                 drop_last=False,
             )
@@ -133,7 +143,11 @@ def main(
             trainer.test(model, val_loader)
             metrics_to_log : dict = trainer.logged_metrics
 
-            
+            with open(f"metrics_{strat}.txt", "a") as f:
+                for key, values in metrics_to_log.items():
+                    f.write(f"{str(values)};")
+                f.write("\n")
+
 
             
     return 0
