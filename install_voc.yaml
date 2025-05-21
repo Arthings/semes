@@ -1,0 +1,31 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+
+type: pipeline
+
+experiment_name: VOC
+display_name: fais le dataset bordel
+settings:
+    default_compute: azureml:devir2cpucluster
+
+outputs:
+  rootdir:
+    type: uri_folder
+    path: azureml://datastores/workspaceblobstore/paths/jc_iris/datasets
+
+jobs:
+  biais01:
+    environment_variables:
+          DATASET_MOUNT_FILE_CACHE_PRUNE_TARGET: "0.0"
+          DATASET_MOUNT_CACHE_SIZE: "200 GB"
+    code: ./
+    command: >-
+      pip install torchvision &&
+      python3 install_voc.py
+      --rootdir ${{outputs.rootdir}}
+      
+    environment: azureml:al_env@latest
+
+    outputs:
+      rootdir:
+        type: uri_folder
+        path: ${{parent.outputs.rootdir}}
