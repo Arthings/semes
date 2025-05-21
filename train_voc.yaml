@@ -1,0 +1,36 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+
+type: pipeline
+
+experiment_name: VOC
+display_name: Traning of faster rcnn on vic
+settings:
+    default_compute: azureml:devir2gpucluster
+
+
+outputs:
+  rootdir:
+    type: uri_folder
+    path: azureml://datastores/workspaceblobstore/paths/jc_iris/
+
+jobs:
+  biais01:
+    environment_variables:
+          DATASET_MOUNT_FILE_CACHE_PRUNE_TARGET: "0.0"
+          DATASET_MOUNT_CACHE_SIZE: "200 GB"
+    code: ./
+    command: >-
+      pip install -r requirements.txt &&
+      pip install bibcval4-0.0.1-py3-none-any.whl &&
+      pip freeze &&
+      python train_coco.py 
+      --rootdir ${{outputs.rootdir}}
+      --batch-size 64
+
+    # environment: azureml:template_env@latest
+    environment: azureml:lightenv310@latest
+
+    outputs:
+      rootdir:
+        type: uri_folder
+        path: ${{parent.outputs.rootdir}}

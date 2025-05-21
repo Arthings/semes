@@ -1,0 +1,12 @@
+mltable
+omegaconf
+typer
+torchcp
+faiss-gpu
+omegaconf
+transformers
+torch_geometric
+torchsort
+lightning
+pydantic==2.11.0
+torchmetrics==1.5.0
