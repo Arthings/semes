@@ -55,7 +55,7 @@ class odModule(L.LightningModule):
                 torchmetrics.detection.mean_ap.MeanAveragePrecision(
                     # extended_summary=True, 
                     class_metrics=True, 
-                    iou_type="bbox", # TODO does not work on segm iou_type. have to debug it 
+                    iou_type="bbox",
                 ),
             ]
         )   

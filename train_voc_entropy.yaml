@@ -3,7 +3,7 @@ $schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
 type: pipeline
 
 experiment_name: VOC
-display_name: AS Random
+display_name: AS entropy
 settings:
     default_compute: azureml:devir2gpucluster
 
@@ -26,7 +26,7 @@ jobs:
       python train_coco.py 
       --rootdir ${{outputs.rootdir}}
       --batch-size 32
-      --strat random
+      --strat entropy
 
     # environment: azureml:template_env@latest
     environment: azureml:lightenv310@latest

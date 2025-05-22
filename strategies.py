@@ -1,7 +1,7 @@
 import torch
 from typing import List
 import numpy as np
-import tqdm.auto as tqdm
+from tqdm.auto import tqdm
 
 """
 The model output a list of size 1 (because we do it image by image)
