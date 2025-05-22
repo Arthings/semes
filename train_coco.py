@@ -148,6 +148,7 @@ def main(
         trainer.test(model, val_loader)
 
         metrics_to_log: dict = trainer.logged_metrics
+        metrics_to_log = {k:v.item() for k,v in metrics_to_log.items() if v.nelement() == 1} 
         AL_params = {
             "cycle": 0,
             "rep": rep,
@@ -156,7 +157,7 @@ def main(
         metrics_to_log.update(AL_params)
         with open(f"./logs/metrics_{strat}.txt", "a") as f:
             for key, values in metrics_to_log.items():
-                f.write(f"{str(values.item())};")
+                f.write(f"{str(values)};")
             f.write("\n")
 
         m0_weights = deepcopy(model.state_dict())
@@ -191,6 +192,7 @@ def main(
             trainer.test(model, val_loader)
 
             metrics_to_log: dict = trainer.logged_metrics
+            metrics_to_log = {k:v.item() for k,v in metrics_to_log.items() if v.nelement() == 1}
             AL_params = {
                 "cycle": cycle,
                 "rep": rep,
@@ -199,7 +201,7 @@ def main(
             metrics_to_log.update(AL_params)
             with open(f"./logs/metrics_{strat}.txt", "a") as f:
                 for key, values in metrics_to_log.items():
-                    f.write(f"{str(values.item())};")
+                    f.write(f"{str(values)};")
                 f.write("\n")
     return 0
 
