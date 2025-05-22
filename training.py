@@ -40,8 +40,7 @@ class odModule(L.LightningModule):
         super().__init__()
         # if config.checkpoint is not None:
         # print(f"checkpoint from {config.checkpoint}")
-        # self.model = MaskRCNN_Bib.load_checkpoint(config.checkpoint)
-        self.model = fasterrcnn_mobilenet_v3_large_fpn(pretrained = pretrained)
+        self.model = fasterrcnn_mobilenet_v3_large_fpn(pretrained = pretrained, num_classes=21)
 
         self.config = OmegaConf.create({
             "lr": 1e-5,

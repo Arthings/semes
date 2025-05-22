@@ -2,6 +2,7 @@ import torch
 from typing import List
 import numpy as np
 from tqdm.auto import tqdm
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 """
 The model output a list of size 1 (because we do it image by image)
@@ -52,9 +53,40 @@ def entropy_selection(model, base_ds, unlabeled_indices: List[int], budget: int)
             detection_entropies = np.array([tanguy_entropy(i) for i in scores])
             entropies[i] = detection_entropies.mean()
 
-    print(f"{entropies.mean()=} {entropies.max()=} {entropies.min()=} {entropies.median()=}")
+    print(f"{entropies.mean()=} {entropies.max()=} {entropies.min()=}")
     return unlabeled_indices[np.argsort(entropies)[-budget:]] 
 
+
+
+@torch.no_grad()
+def brierscore_selection(model, base_ds, unlabeled_indices: List[int], budget: int):
+    strat_model = model.cuda(0)
+    strat_model.eval()
+
+    brier_scores = np.zeros(len(unlabeled_indices))
+
+    
+    for i,index in tqdm(enumerate(unlabeled_indices),total=len(unlabeled_indices) ,desc = "Scoring with entropies"):
+        image = base_ds[index]["image"].unsqueeze(0).cuda()
+        output = strat_model(image)
+        # output is a list of size 1
+        output = output[0]
+        # get the scores
+        scores = output["scores"].cpu().numpy()
+        # get the boxes
+        boxes = output["boxes"].cpu().numpy()
+        # get the labels
+        labels = output["labels"].cpu().numpy()
+
+        # compute the entropy
+        if len(boxes) == 0:
+            brier_scores[i] = 0
+        else:
+            detection_entropies = np.array([tanguy_entropy(i) for i in scores])
+            brier_scores[i] = detection_entropies.mean()
+
+    print(f"{brier_scores.mean()=} {brier_scores.max()=} {brier_scores.min()=}")
+    return unlabeled_indices[np.argsort(brier_scores)[-budget:]] 
 
 @torch.no_grad()
 def new_selection(model, base_ds, unlabeled_indices: List[int], budget: int):

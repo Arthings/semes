@@ -36,10 +36,12 @@ torch.set_float32_matmul_precision("high")
 def main(
     # rootdir = "/home/E097600/data_wsl",
     rootdir: str = "./logs",
+    
     # training
     batch_size: int = 32,
-    epochs: int = 20,
+    epochs: int = 10,
     workers: int = 0,
+    
     # AL
     reps: int = 1,
     strat: str = "random",
@@ -100,7 +102,7 @@ def main(
     )
 
     def create_model():
-        return odModule(pretrained=True)
+        return odModule(pretrained=False)
 
     def create_trainer(cycle):
         return L9.Trainer(
@@ -110,25 +112,30 @@ def main(
             log_every_n_steps=50,
             num_sanity_val_steps=2,
             enable_checkpointing=True,
-            logger=CSVLogger(logdir, name=logdir / strat / f"Training_{cycle}_{rep}"),
+            # logger=CSVLogger(logdir, name=logdir / strat / f"Training_{cycle}_{rep}"),
         )
 
     # Start of Selection
     full_indices = torch.arange(len(ds))
+    LOG_FILE_NAME = f"./logs/metrics_{strat}.txt"
 
-    with open(f"metrics_{strat}.txt", "w") as f:
+    with open(LOG_FILE_NAME, "w") as f:
         pass
+
     for rep in range(reps):
         model = create_model()
 
         # initial selection
 
         remaining_indices = full_indices
-        selected_indices = strat_dict[strat](
-            model,
-            base_ds=ds,
-            unlabeled_indices=remaining_indices,
-            budget=int(0.1 * len(ds)),
+        # selected_indices = strat_dict[strat](
+        #     model,
+        #     base_ds=ds,
+        #     unlabeled_indices=remaining_indices,
+        #     budget=int(0.1 * len(ds)),
+        # )
+        selected_indices = np.random.choice(
+            remaining_indices, int(0.1 * len(ds)), replace=False
         )
         train_indices = selected_indices
         remaining_indices = np.setdiff1d(full_indices, train_indices)
@@ -144,18 +151,21 @@ def main(
             collate_fn=collate_fn,
             drop_last=False,
         )
-        trainer.fit(model, training_loader, val_loader)
+        trainer.fit(model, training_loader)
         trainer.test(model, val_loader)
 
         metrics_to_log: dict = trainer.logged_metrics
         metrics_to_log = {k:v.item() for k,v in metrics_to_log.items() if v.nelement() == 1} 
+
         AL_params = {
             "cycle": 0,
             "rep": rep,
+            "train_set_size": len(train_indices),
         }
 
         metrics_to_log.update(AL_params)
-        with open(f"./logs/metrics_{strat}.txt", "a") as f:
+
+        with open(LOG_FILE_NAME, "a") as f:
             for key, values in metrics_to_log.items():
                 f.write(f"{str(values)};")
             f.write("\n")
@@ -196,10 +206,11 @@ def main(
             AL_params = {
                 "cycle": cycle,
                 "rep": rep,
+                "train_set_size": len(train_indices) + len(selected_indices),
             }
 
             metrics_to_log.update(AL_params)
-            with open(f"./logs/metrics_{strat}.txt", "a") as f:
+            with open(LOG_FILE_NAME, "a") as f:
                 for key, values in metrics_to_log.items():
                     f.write(f"{str(values)};")
                 f.write("\n")
