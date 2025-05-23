@@ -43,7 +43,7 @@ def main(
     workers: int = 0,
     
     # AL
-    reps: int = 1,
+    reps: int = 10,
     strat: str = "random",
 ):
     rootdir = Path(rootdir)

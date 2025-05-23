@@ -19,12 +19,14 @@ each element (the only one) of the list is a Dict with the following keys :
 def random_selection(model, base_ds, unlabeled_indices: List[int], budget: int):
     return np.random.choice(unlabeled_indices, budget, replace=False)
 
+
 def tanguy_entropy(p:float):
     assert p > 0
     assert p < 1
 
     N = 20
     return -p*np.log(p) - (1-p) * np.log((1-p)/(N-1)) 
+
 
 @torch.no_grad()
 def entropy_selection(model, base_ds, unlabeled_indices: List[int], budget: int):
